@@ -4,17 +4,22 @@
 
 package freeholdclient
 
-import "bitbucket.org/tshannon/freehold/permission"
-
 // File is a file stored on freehold instance
 // and the properties associated with it
 type File struct {
-	Name        string                 `json:"name,omitempty"`
-	URL         string                 `json:"url,omitempty"`
-	Permissions *permission.Permission `json:"permissions,omitempty"`
-	Size        int64                  `json:"size,omitempty"`
-	Modified    string                 `json:"modified,omitempty"`
-	IsDir       bool                   `json:"isDir,omitempty"`
+	Name        string      `json:"name,omitempty"`
+	URL         string      `json:"url,omitempty"`
+	Permissions *Permission `json:"permissions,omitempty"`
+	Size        int64       `json:"size,omitempty"`
+	Modified    string      `json:"modified,omitempty"`
+	IsDir       bool        `json:"isDir,omitempty"`
+}
+
+type Permission struct {
+	Owner   string `json:"owner,omitempty"`
+	Public  string `json:"public,omitempty"`
+	Friend  string `json:"friend,omitempty"`
+	Private string `json:"private,omitempty"`
 }
 
 // RetrieveFile retrieves a file from a freehold instance
