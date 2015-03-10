@@ -12,6 +12,9 @@ import (
 	"net/url"
 )
 
+// MaxMemory is used for parsing file uploads http://golang.org/pkg/mime/multipart/#Reader.ReadForm
+var MaxMemory = 10485760
+
 // Client is used for interacting with a Freehold Instance
 // A Client needs a url, username, and password or token
 // After the client is initialized, all requests should be run

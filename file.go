@@ -4,14 +4,17 @@
 
 package freeholdclient
 
-<<<<<<< HEAD
 import (
+	"bytes"
+	"errors"
+	"io"
+	"mime"
+	"mime/multipart"
+	"net/http"
 	"strings"
 	"time"
 )
 
-=======
->>>>>>> c3e82cb7bb8435ebb1947659d26c4c02c7b4a6d1
 // File is a file stored on freehold instance
 // and the properties associated with it
 type File struct {
@@ -21,15 +24,11 @@ type File struct {
 	Size        int64       `json:"size,omitempty"`
 	Modified    string      `json:"modified,omitempty"`
 	IsDir       bool        `json:"isDir,omitempty"`
-<<<<<<< HEAD
 	client      *Client
+	mpReader    *multipart.Reader
 }
 
 // Permission is the client side definition of a Freehold Permission
-=======
-}
-
->>>>>>> c3e82cb7bb8435ebb1947659d26c4c02c7b4a6d1
 type Permission struct {
 	Owner   string `json:"owner,omitempty"`
 	Public  string `json:"public,omitempty"`
@@ -87,12 +86,54 @@ func (f *File) Children() ([]*File, error) {
 	return children, nil
 }
 
-// Reads data from the freehold instance on the given file
+// Reads data from the freehold instance on the given file (GET file data)
 func (f *File) Read(p []byte) (n int, err error) {
+	if f.mpReader == nil {
+		req, err := http.NewRequest(method, f.URL, nil)
+		if err != nil {
+			return 0, err
+		}
 
+		req.SetBasicAuth(f.client.username, f.client.pass)
+
+		res, err := f.client.Do(req)
+		defer res.Body.Close() //TODO: How to handle this with mpReader?
+		if err != nil {
+			return 0, err
+		}
+
+		mediaType, params, err := mime.ParseMediaType(res.Header.Get("Content-Type"))
+		if err != nil {
+			return 0, err
+		}
+
+		if !strings.HasPrefix(mediaType, "multipart/") {
+			return 0, errors.New("Invalid multipart form response from ", f.URL)
+		}
+		f.mpReader = multipart.NewReader(res.Body, params["boundary"])
+	}
+
+	part, err := f.mpReader.NextPart()
+	if err == io.EOF {
+		return 0, nil
+	}
+	if err != nil {
+		return f.mpReaderLen, err
+	}
+
+	buff := bytes.NewBuffer(p)
+	n, err := io.Copy(buff, part)
+	if err != nil {
+		return n, err
+	}
+	return n, part.Close()
 }
 
-// Close closes the freehold file reader's request body
+// Close closes the open file
 func (f *File) Close() error {
+}
+
+// Write writes data to the freehold file (updates it with a Put Call)
+func (f *File) Write(b []byte) (n int, err error) {
 
 }
