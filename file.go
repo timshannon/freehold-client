@@ -4,11 +4,14 @@
 
 package freeholdclient
 
+<<<<<<< HEAD
 import (
 	"strings"
 	"time"
 )
 
+=======
+>>>>>>> c3e82cb7bb8435ebb1947659d26c4c02c7b4a6d1
 // File is a file stored on freehold instance
 // and the properties associated with it
 type File struct {
@@ -18,10 +21,15 @@ type File struct {
 	Size        int64       `json:"size,omitempty"`
 	Modified    string      `json:"modified,omitempty"`
 	IsDir       bool        `json:"isDir,omitempty"`
+<<<<<<< HEAD
 	client      *Client
 }
 
 // Permission is the client side definition of a Freehold Permission
+=======
+}
+
+>>>>>>> c3e82cb7bb8435ebb1947659d26c4c02c7b4a6d1
 type Permission struct {
 	Owner   string `json:"owner,omitempty"`
 	Public  string `json:"public,omitempty"`
