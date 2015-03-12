@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"testing"
 )
 
@@ -13,7 +14,8 @@ var (
 	server   *httptest.Server
 	username = "tester"
 	password = "testerToken"
-	filePath = "/v1/file/testing/"
+	dirPath  = "/v1/file/testing/"
+	filePath = "/v1/file/testing/test.txt"
 )
 
 func startMockServer() {
@@ -40,7 +42,7 @@ func TestFile(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	f, err := client.RetrieveFile(filePath)
+	f, err := client.GetFile(dirPath)
 
 	if err != nil {
 		t.Fatal(err)
@@ -49,24 +51,56 @@ func TestFile(t *testing.T) {
 
 }
 
+// will go away and be replaced with legitimate standalone tests with a mock server
 func TestRealFile(t *testing.T) {
-	client, err := New("https://tshannon.org", "tshannon", "eAhmtD1hJfzV4C3GvDSIOAkumN54vSgCOIOcrLb5w2A=",
+	client, err := New("https://dev.tshannon.org", "tshannon", "zVZm8Ic0_zGUpxTbry9Ph4C--0vs4v9-QM6uYITXk4g=",
 		&tls.Config{InsecureSkipVerify: true},
 	)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	f, err := client.RetrieveFile(filePath)
+	f, err := client.GetFile(dirPath)
 
 	if err != nil {
 		t.Fatal(err)
 	}
-	children, err := f.Children()
+	//children, err := f.Children()
+	//if err != nil {
+	//t.Fatal(err)
+	//}
+	//for i := range children {
+	//t.Log(children[i].URL)
+	//}
+
+	localFile, err := os.Open("test.txt")
+	defer localFile.Close()
+
 	if err != nil {
 		t.Fatal(err)
 	}
-	for i := range children {
-		t.Log(children[i].URL)
+
+	upFile, err := client.UploadFile(localFile, f)
+	if err != nil {
+		t.Fatal(err)
 	}
+	t.Log("Upload Successful: ", upFile.Name)
+
+	//f2, err := client.GetFile(filePath)
+	//if err != nil {
+	//t.Fatal(err)
+	//}
+
+	//lf, err := os.Create(f2.Name)
+	//defer lf.Close()
+	//if err != nil {
+	//t.Fatal(err)
+
+	//}
+
+	//_, err = io.Copy(lf, f2)
+	//defer f2.Close()
+	//if err != nil {
+	//t.Fatal(err)
+	//}
 }

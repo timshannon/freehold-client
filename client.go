@@ -12,17 +12,14 @@ import (
 	"net/url"
 )
 
-// MaxMemory is used for parsing file uploads http://golang.org/pkg/mime/multipart/#Reader.ReadForm
-var MaxMemory = 10485760
-
 // Client is used for interacting with a Freehold Instance
 // A Client needs a url, username, and password or token
 // After the client is initialized, all requests should be run
-// agasint the path of the file, ds, etc in question
+// against the path of the file, ds, etc in question
 // /v1/file/test.txt instead of the full url
 // https://freeholdinstance/v1/file/test.txt
 type Client struct {
-	*http.Client
+	hClient  *http.Client
 	root     *url.URL
 	username string
 	pass     string
@@ -48,16 +45,17 @@ func New(rootURL, username, passwordOrToken string, tlsCfg *tls.Config) (*Client
 		return nil, err
 	}
 
-	return &Client{
+	c := &Client{
 		root:     uri,
 		username: username,
 		pass:     passwordOrToken,
-		Client: &http.Client{
+		hClient: &http.Client{
 			Transport: &http.Transport{
 				TLSClientConfig: tlsCfg,
 			},
 		},
-	}, nil
+	}
+	return c, nil
 }
 
 //doRequest will run a standard freehold request, and try to unpack the data result into
@@ -73,7 +71,7 @@ func (c *Client) doRequest(method, fhPath string, result interface{}) error {
 
 	req.SetBasicAuth(c.username, c.pass)
 
-	res, err := c.Do(req)
+	res, err := c.hClient.Do(req)
 	if err != nil {
 		return err
 	}
