@@ -2,12 +2,17 @@
 // Use of this source code is governed by the MIT license
 // that can be found in the LICENSE file.
 
+// Package freeholdclient is a Go client for interacting with a freehold instance.
+//When using the freehold client it is recommended to generate a token and use that
+//rather than storing a users password locally in cleartext
 package freeholdclient
 
 import (
+	"bytes"
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"net/url"
 )
@@ -18,6 +23,10 @@ import (
 // against the path of the file, ds, etc in question
 // /v1/file/test.txt instead of the full url
 // https://freeholdinstance/v1/file/test.txt
+//
+// It is highly encouraged to not store a user's password, and
+// instead use a Security Token generated for this specific
+// client
 type Client struct {
 	hClient  *http.Client
 	root     *url.URL
@@ -61,8 +70,9 @@ func New(rootURL, username, passwordOrToken string, tlsCfg *tls.Config) (*Client
 //doRequest will run a standard freehold request, and try to unpack the data result into
 // the passed in result interface.  Only to be used with
 // JSEND responses
-func (c *Client) doRequest(method, fhPath string, result interface{}) error {
+func (c *Client) doRequest(method, fhPath string, send interface{}, result interface{}) error {
 	c.root.Path = fhPath
+
 	req, err := http.NewRequest(method, c.root.String(), nil)
 
 	if err != nil {
@@ -70,6 +80,16 @@ func (c *Client) doRequest(method, fhPath string, result interface{}) error {
 	}
 
 	req.SetBasicAuth(c.username, c.pass)
+	if send != nil {
+		b, err := json.Marshal(send)
+		if err != nil {
+			return fmt.Errorf("Error json marshalling send data: %v", err)
+		}
+		r := bytes.NewReader(b)
+		req.Body = ioutil.NopCloser(r)
+		req.ContentLength = int64(r.Len())
+		req.Header.Set("Content-Type", "application/x-www-form-urlencoded; charset=UTF-8")
+	}
 
 	res, err := c.hClient.Do(req)
 	if err != nil {
@@ -89,9 +109,11 @@ func (c *Client) doRequest(method, fhPath string, result interface{}) error {
 		return fmt.Errorf("Request %s failed with a status of %d.  Message: %s", c.root.String(), res.StatusCode, response.Message)
 	}
 
-	err = json.Unmarshal(*response.Data, result)
-	if err != nil {
-		return err
+	if result != nil {
+		err = json.Unmarshal(*response.Data, result)
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }

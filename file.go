@@ -45,7 +45,7 @@ type File struct {
 
 	client     *Client
 	readerBody io.ReadCloser
-	modDate    time.Time
+	modTime    time.Time
 }
 
 // Permission is the client side definition of a Freehold Permission
@@ -62,7 +62,7 @@ func (c *Client) GetFile(filePath string) (*File, error) {
 	propPath := propertyPath(filePath)
 
 	f := &File{}
-	err := c.doRequest("GET", propPath, f)
+	err := c.doRequest("GET", propPath, nil, f)
 
 	if err != nil {
 		return nil, err
@@ -160,19 +160,19 @@ func (f *File) upload(method string, r io.Reader, size int64) error {
 	return err
 }
 
-// ModifiedDate is the parsed date time from the modified string value
+// ModifiedTime is the parsed date and time from the modified string value
 // returned from the freehold REST API
-func (f *File) ModifiedDate() time.Time {
-	if f.modDate.IsZero() {
+func (f *File) ModifiedTime() time.Time {
+	if f.modTime.IsZero() {
 		t, err := time.Parse(time.RFC3339, f.Modified)
 		if err != nil {
 			//shouldn't happen as it means freehold is
 			// sending out bad dates
 			panic("Freehold instance is has bad Modified date!")
 		}
-		f.modDate = t
+		f.modTime = t
 	}
-	return f.modDate
+	return f.modTime
 }
 
 // Children returns the child files (if any) of the given file
@@ -189,7 +189,7 @@ func (f *File) Children() ([]*File, error) {
 	}
 
 	var children []*File
-	err := f.client.doRequest("GET", uri, &children)
+	err := f.client.doRequest("GET", uri, nil, &children)
 	if err != nil {
 		return nil, err
 	}

@@ -1,3 +1,7 @@
+// Copyright 2015 Tim Shannon. All rights reserved.
+// Use of this source code is governed by the MIT license
+// that can be found in the LICENSE file.
+
 package freeholdclient
 
 import (
@@ -60,8 +64,8 @@ func TestFile(t *testing.T) {
 		t.Errorf("Permissions Private does not match.  Expected rw got %s", f.Permissions.Private)
 	}
 
-	if m, _ := time.Parse(time.RFC3339, "2015-03-06T15:47:40-06:00"); !f.ModifiedDate().Equal(m) {
-		t.Errorf("Modified Date does not match. Expected %v got %v", m, f.ModifiedDate())
+	if m, _ := time.Parse(time.RFC3339, "2015-03-06T15:47:40-06:00"); !f.ModifiedTime().Equal(m) {
+		t.Errorf("Modified Date does not match. Expected %v got %v", m, f.ModifiedTime())
 	}
 
 	children, err := f.Children()
