@@ -1,12 +1,11 @@
 package freeholdclient
 
 import (
-	"crypto/tls"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
-	"os"
 	"testing"
+	"time"
 )
 
 var (
@@ -15,7 +14,6 @@ var (
 	username = "tester"
 	password = "testerToken"
 	dirPath  = "/v1/file/testing/"
-	filePath = "/v1/file/testing/test.txt"
 )
 
 func startMockServer() {
@@ -34,7 +32,13 @@ func TestFile(t *testing.T) {
 	//Setup Mock Handler
 	mux.HandleFunc("/v1/properties/file/testing",
 		func(w http.ResponseWriter, r *http.Request) {
-			fmt.Fprint(w, `{"status":"success","data":{"name":"testing","url":"/v1/file/testing/","permissions":{"owner":"tshannon","private":"rw"},"modified":"2015-03-06T15:47:40-06:00","isDir":true}}`)
+			fmt.Fprint(w, `{"status":"success","data":{"name":"testing","url":"/v1/file/testing/",
+				"permissions":{"owner":"tshannon","private":"rw"},"modified":"2015-03-06T15:47:40-06:00","isDir":true}}`)
+		})
+	mux.HandleFunc("/v1/properties/file/testing/",
+		func(w http.ResponseWriter, r *http.Request) {
+			fmt.Fprint(w, `{"status":"success","data":[{"name":"test.txt","url":"/v1/file/testing/test.txt",
+				"permissions":{"owner":"tshannon","private":"rw"},"size":9,"modified":"2015-03-13T11:28:59-05:00"}]}`)
 		})
 
 	client, err := New(server.URL, username, password, nil)
@@ -45,62 +49,27 @@ func TestFile(t *testing.T) {
 	f, err := client.GetFile(dirPath)
 
 	if err != nil {
-		t.Fatal(err)
+		t.Fatalf("Error retrieving file properties: %v", err)
 	}
-	t.Log(f.Permissions.Owner)
 
-}
+	if f.Permissions.Owner != "tshannon" {
+		t.Errorf("Permissions owner does not match.  Expected tshannon got %s", f.Permissions.Owner)
+	}
 
-// will go away and be replaced with legitimate standalone tests with a mock server
-func TestRealFile(t *testing.T) {
-	client, err := New("https://dev.tshannon.org", "tshannon", "zVZm8Ic0_zGUpxTbry9Ph4C--0vs4v9-QM6uYITXk4g=",
-		&tls.Config{InsecureSkipVerify: true},
-	)
+	if f.Permissions.Private != "rw" {
+		t.Errorf("Permissions Private does not match.  Expected rw got %s", f.Permissions.Private)
+	}
+
+	if m, _ := time.Parse(time.RFC3339, "2015-03-06T15:47:40-06:00"); !f.ModifiedDate().Equal(m) {
+		t.Errorf("Modified Date does not match. Expected %v got %v", m, f.ModifiedDate())
+	}
+
+	children, err := f.Children()
 	if err != nil {
-		t.Fatal(err)
+		t.Fatalf("Error retrieving child files: %v", err)
+	}
+	if children[0].Name != "test.txt" {
+		t.Errorf("Child file name does not match. Expected test.txt got %s", children[0].Name)
 	}
 
-	f, err := client.GetFile(dirPath)
-
-	if err != nil {
-		t.Fatal(err)
-	}
-	//children, err := f.Children()
-	//if err != nil {
-	//t.Fatal(err)
-	//}
-	//for i := range children {
-	//t.Log(children[i].URL)
-	//}
-
-	localFile, err := os.Open("test.txt")
-	defer localFile.Close()
-
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	upFile, err := client.UploadFile(localFile, f)
-	if err != nil {
-		t.Fatal(err)
-	}
-	t.Log("Upload Successful: ", upFile.Name)
-
-	//f2, err := client.GetFile(filePath)
-	//if err != nil {
-	//t.Fatal(err)
-	//}
-
-	//lf, err := os.Create(f2.Name)
-	//defer lf.Close()
-	//if err != nil {
-	//t.Fatal(err)
-
-	//}
-
-	//_, err = io.Copy(lf, f2)
-	//defer f2.Close()
-	//if err != nil {
-	//t.Fatal(err)
-	//}
 }

@@ -45,6 +45,7 @@ type File struct {
 
 	client     *Client
 	readerBody io.ReadCloser
+	modDate    time.Time
 }
 
 // Permission is the client side definition of a Freehold Permission
@@ -111,68 +112,67 @@ func (f *File) upload(method string, r io.Reader, size int64) error {
 
 	var res *http.Response
 
-	pout, pin := io.Pipe()
-	writer := multipart.NewWriter(pin)
-	defer writer.Close()
-	done := make(chan error)
+	pRead, pWrite := io.Pipe()
+	writer := multipart.NewWriter(pWrite)
 
-	uri := path.Dir(f.FullURL())
+	done := make(chan error, 1)
+
+	f.client.root.Path = path.Dir(f.URL)
+	uri := f.client.root.String()
 
 	go func() {
-		req, err := http.NewRequest(method, uri, pout)
+		defer pWrite.Close()
+		prt, err := writer.CreateFormFile("file", f.Name)
 		if err != nil {
 			done <- err
 			return
 		}
 
-		req.SetBasicAuth(f.client.username, f.client.pass)
-		req.Header.Set("Content-Type", writer.FormDataContentType())
-		req.ContentLength = multipartOverhead + size
-
-		res, err = f.client.hClient.Do(req)
-
-		if err != nil {
-			done <- err
-			return
+		_, err = io.Copy(prt, lr)
+		if err == nil {
+			err = writer.Close()
 		}
 
-		if res.StatusCode >= 400 {
-			done <- fmt.Errorf("Request %s failed with a status of %d.", uri, res.StatusCode)
-			return
-		}
-		done <- nil
+		done <- err
 	}()
 
-	fmt.Println("before createform file")
-	prt, err := writer.CreateFormFile("file", f.Name)
-
-	defer pin.Close()
+	req, err := http.NewRequest(method, uri, pRead)
 	if err != nil {
 		return err
 	}
 
-	fmt.Println("after create form file")
-	_, err = io.Copy(prt, lr)
-	fmt.Println("after copy before error")
+	req.SetBasicAuth(f.client.username, f.client.pass)
+	req.Header.Set("Content-Type", writer.FormDataContentType())
+	req.ContentLength = multipartOverhead + size + int64(len([]byte("file"+f.Name)))
+
+	res, err = f.client.hClient.Do(req)
+
 	if err != nil {
 		return err
 	}
+	defer res.Body.Close()
 
-	fmt.Println("after copy after error")
+	if res.StatusCode >= 400 {
+		return fmt.Errorf("Request %s failed with a status of %d.", uri, res.StatusCode)
+	}
 
-	return <-done
+	err = <-done
+	return err
 }
 
 // ModifiedDate is the parsed date time from the modified string value
 // returned from the freehold REST API
 func (f *File) ModifiedDate() time.Time {
-	t, err := time.Parse(time.RFC3339, f.Modified)
-	if err != nil {
-		//shouldn't happen as it means freehold is
-		// sending out bad dates
-		panic("Freehold instance is has bad Modified date!")
+	if f.modDate.IsZero() {
+		t, err := time.Parse(time.RFC3339, f.Modified)
+		if err != nil {
+			//shouldn't happen as it means freehold is
+			// sending out bad dates
+			panic("Freehold instance is has bad Modified date!")
+		}
+		f.modDate = t
 	}
-	return t
+	return f.modDate
 }
 
 // Children returns the child files (if any) of the given file
@@ -231,7 +231,7 @@ func (f *File) Read(p []byte) (n int, err error) {
 	return f.readerBody.Read(p)
 }
 
-// Close closes the open file
+// Close closes the open reader
 func (f *File) Close() error {
 	if f.readerBody != nil {
 		r := f.readerBody
@@ -240,5 +240,3 @@ func (f *File) Close() error {
 	}
 	return nil
 }
-
-//TODO: https://gist.github.com/cryptix/9dd094008b6236f4fc57
