@@ -7,7 +7,6 @@ package freeholdclient
 import (
 	"bytes"
 	"errors"
-	"fmt"
 	"io"
 	"mime/multipart"
 	"net/http"
@@ -73,26 +72,42 @@ func (c *Client) GetFile(filePath string) (*File, error) {
 	return f, nil
 }
 
+// NewFolder creates a new folder on the freehold instance
+func (c *Client) NewFolder(folderPath string) error {
+	if !strings.HasPrefix(folderPath, "/v1/file/") {
+		return errors.New("Invalid folder path")
+	}
+	return c.doRequest("POST", folderPath, nil, nil)
+}
+
 // UploadFile uploads a local file to the freehold instance
 // and returns a File type.
 // Dest must be a Dir
 func (c *Client) UploadFile(file *os.File, dest *File) (*File, error) {
-	if !dest.IsDir {
-		return nil, errors.New("Destination is not a directory.")
-	}
 	info, err := file.Stat()
 	if err != nil {
 		return nil, err
 	}
 
 	name := filepath.Base(info.Name())
+
+	return c.UploadFromReader(name, file, info.Size(), dest)
+
+}
+
+// UploadFromReader uploads file data from the passed in reader
+// size is required and dest must be a directory on the freehold instance
+func (c *Client) UploadFromReader(fileName string, r io.Reader, size int64, dest *File) (*File, error) {
+	if !dest.IsDir {
+		return nil, errors.New("Destination is not a directory.")
+	}
 	f := &File{
-		Name:   name,
-		URL:    filepath.Join(dest.URL, name),
+		Name:   fileName,
+		URL:    filepath.Join(dest.URL, fileName),
 		client: c,
 	}
 
-	err = f.upload("POST", file, info.Size())
+	err := f.upload("POST", r, size)
 	if err != nil {
 		return nil, err
 	}
@@ -152,8 +167,9 @@ func (f *File) upload(method string, r io.Reader, size int64) error {
 	}
 	defer res.Body.Close()
 
-	if res.StatusCode >= 400 {
-		return fmt.Errorf("Request %s failed with a status of %d.", uri, res.StatusCode)
+	err = isError(uri, res.StatusCode, nil)
+	if err != nil {
+		return err
 	}
 
 	err = <-done
@@ -219,8 +235,9 @@ func (f *File) Read(p []byte) (n int, err error) {
 			return 0, err
 		}
 
-		if res.StatusCode != 200 {
-			return 0, fmt.Errorf("File Retrieve %s failed with a status of %d.", f.URL, res.StatusCode)
+		err = isError(f.FullURL(), res.StatusCode, nil)
+		if err != nil {
+			return 0, err
 		}
 
 		if res != nil {
@@ -239,4 +256,17 @@ func (f *File) Close() error {
 		return r.Close()
 	}
 	return nil
+}
+
+// Delete deletes a file
+func (f *File) Delete() error {
+	return f.client.doRequest("DELETE", f.URL, nil, nil)
+}
+
+// Move moves a file to a new location
+func (f *File) Move(to string) error {
+	if !strings.HasPrefix(to, "/v1/file/") {
+		return errors.New("Invalid file path")
+	}
+	return f.client.doRequest("PUT", f.URL, map[string]string{"move": to}, nil)
 }

@@ -105,8 +105,9 @@ func (c *Client) doRequest(method, fhPath string, send interface{}, result inter
 		return err
 	}
 
-	if res.StatusCode >= 400 {
-		return fmt.Errorf("Request %s failed with a status of %d.  Message: %s", c.root.String(), res.StatusCode, response.Message)
+	err = isError(c.root.String(), res.StatusCode, response)
+	if err != nil {
+		return err
 	}
 
 	if result != nil {
