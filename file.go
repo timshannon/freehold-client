@@ -91,13 +91,13 @@ func (c *Client) UploadFile(file *os.File, dest *File) (*File, error) {
 
 	name := filepath.Base(info.Name())
 
-	return c.UploadFromReader(name, file, info.Size(), dest)
+	return c.UploadFromReader(name, file, info.Size(), info.ModTime(), dest)
 
 }
 
 // UploadFromReader uploads file data from the passed in reader
 // size is required and dest must be a directory on the freehold instance
-func (c *Client) UploadFromReader(fileName string, r io.Reader, size int64, dest *File) (*File, error) {
+func (c *Client) UploadFromReader(fileName string, r io.Reader, size int64, modTime time.Time, dest *File) (*File, error) {
 	if !dest.IsDir {
 		return nil, errors.New("Destination is not a directory.")
 	}
@@ -107,7 +107,7 @@ func (c *Client) UploadFromReader(fileName string, r io.Reader, size int64, dest
 		client: c,
 	}
 
-	err := f.upload("POST", r, size)
+	err := f.upload("POST", r, size, modTime)
 	if err != nil {
 		return nil, err
 	}
@@ -119,10 +119,10 @@ func (c *Client) UploadFromReader(fileName string, r io.Reader, size int64, dest
 // Size is the total size to be read from r, and a limitReader is used to
 // enforce this
 func (f *File) Update(r io.Reader, size int64) error {
-	return f.upload("PUT", r, size)
+	return f.upload("PUT", r, size, time.Time{})
 }
 
-func (f *File) upload(method string, r io.Reader, size int64) error {
+func (f *File) upload(method string, r io.Reader, size int64, modTime time.Time) error {
 	lr := io.LimitReader(r, size)
 
 	var res *http.Response
@@ -157,6 +157,10 @@ func (f *File) upload(method string, r io.Reader, size int64) error {
 	}
 
 	req.SetBasicAuth(f.client.username, f.client.pass)
+	if !modTime.IsZero() {
+		req.Header.Set("Fh-Modified", modTime.Format(time.RFC3339))
+	}
+
 	req.Header.Set("Content-Type", writer.FormDataContentType())
 	req.ContentLength = multipartOverhead + size + int64(len([]byte("file"+f.Name)))
 
