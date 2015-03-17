@@ -9,7 +9,6 @@ package freeholdclient
 
 import (
 	"bytes"
-	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -44,11 +43,13 @@ type jsend struct {
 
 // New creates a new Freehold Client
 // tlsCfg is optional
-func New(rootURL, username, passwordOrToken string, tlsCfg *tls.Config) (*Client, error) {
-	if tlsCfg == nil {
-		tlsCfg = &tls.Config{}
-	}
+func New(rootURL, username, passwordOrToken string) (*Client, error) {
+	return NewFromClient(&http.Client{}, rootURL, username, passwordOrToken)
+}
 
+// NewFromClient creates a new freehold client from an existing http Client, which lets you
+// set custom timeouts, tls config, etc
+func NewFromClient(client *http.Client, rootURL, username, passwordOrToken string) (*Client, error) {
 	uri, err := url.Parse(rootURL)
 	if err != nil {
 		return nil, err
@@ -58,12 +59,9 @@ func New(rootURL, username, passwordOrToken string, tlsCfg *tls.Config) (*Client
 		root:     uri,
 		username: username,
 		pass:     passwordOrToken,
-		hClient: &http.Client{
-			Transport: &http.Transport{
-				TLSClientConfig: tlsCfg,
-			},
-		},
+		hClient:  client,
 	}
+
 	return c, nil
 }
 
