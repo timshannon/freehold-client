@@ -52,7 +52,7 @@ func New(rootURL, username, passwordOrToken string) (*Client, error) {
 func NewFromClient(client *http.Client, rootURL, username, passwordOrToken string) (*Client, error) {
 	uri, err := url.Parse(rootURL)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("Error Parsing freehold URL: %s", err)
 	}
 
 	c := &Client{
