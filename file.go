@@ -213,6 +213,10 @@ func (f *File) Children() ([]*File, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	for i := range children {
+		children[i].client = f.client
+	}
 	return children, nil
 }
 
