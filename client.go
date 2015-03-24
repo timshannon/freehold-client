@@ -10,6 +10,7 @@ package freeholdclient
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -53,6 +54,9 @@ func NewFromClient(client *http.Client, rootURL, username, passwordOrToken strin
 	uri, err := url.Parse(rootURL)
 	if err != nil {
 		return nil, fmt.Errorf("Error Parsing freehold URL: %s", err)
+	}
+	if client == nil {
+		return nil, errors.New("Nil http client passed in!")
 	}
 
 	c := &Client{
@@ -115,4 +119,10 @@ func (c *Client) doRequest(method, fhPath string, send interface{}, result inter
 		}
 	}
 	return nil
+}
+
+// RootURL returns the Root of this freehold client
+// I.E. the domain + port that all requests will be made with
+func (c *Client) RootURL() *url.URL {
+	return c.root
 }
