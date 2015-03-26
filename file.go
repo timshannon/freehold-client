@@ -183,12 +183,12 @@ func (f *File) upload(method string, r io.Reader, size int64, modTime time.Time)
 // ModifiedTime is the parsed date and time from the modified string value
 // returned from the freehold REST API
 func (f *File) ModifiedTime() time.Time {
-	if f.modTime.IsZero() {
+	if f.modTime.IsZero() && f.Modified != "" {
 		t, err := time.Parse(time.RFC3339, f.Modified)
 		if err != nil {
 			//shouldn't happen as it means freehold is
 			// sending out bad dates
-			panic("Freehold instance is has bad Modified date!")
+			panic("Freehold instance has a bad Modified date! " + err.Error())
 		}
 		f.modTime = t
 	}
