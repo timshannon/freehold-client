@@ -143,9 +143,13 @@ func (f *File) upload(method string, r io.Reader, size int64, modTime time.Time)
 			return
 		}
 
-		_, err = io.Copy(prt, lr)
+		written, err := io.Copy(prt, lr)
 		if err == nil {
 			err = writer.Close()
+		}
+
+		if err == nil && written != size {
+			err = io.ErrShortWrite
 		}
 
 		done <- err
