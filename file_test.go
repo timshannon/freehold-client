@@ -45,7 +45,7 @@ func TestFile(t *testing.T) {
 				"permissions":{"owner":"tshannon","private":"rw"},"size":9,"modified":"2015-03-13T11:28:59-05:00"}]}`)
 		})
 
-	client, err := New(server.URL, username, password, nil)
+	client, err := New(server.URL, username, password)
 	if err != nil {
 		t.Fatal(err)
 	}

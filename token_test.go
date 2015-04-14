@@ -24,7 +24,7 @@ func TestAllTokens(t *testing.T) {
 				{"id":"bf0ac157dbb199d3b2ab95332df7f037","name":"test2","expires":"2015-06-11T14:52:07-05:00","created":"2015-03-13T14:52:07-05:00"}]}`)
 		})
 
-	client, err := New(server.URL, username, password, nil)
+	client, err := New(server.URL, username, password)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -70,7 +70,7 @@ func TestGetToken(t *testing.T) {
 				{"id":"61c78f8bf7f62f2b17aaaa4e1345e27b","name":"test","expires":"2015-06-11T14:51:36-05:00","created":"2015-03-13T14:51:36-05:00"}}`)
 		})
 
-	client, err := New(server.URL, username, password, nil)
+	client, err := New(server.URL, username, password)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -106,7 +106,7 @@ func TestNewToken(t *testing.T) {
 				{"id":"61c78f8bf7f62f2b17aaaa4e1345e27b","name":"test","expires":"2015-06-11T14:51:36-05:00","created":"2015-03-13T14:51:36-05:00"}}`)
 		})
 
-	client, err := New(server.URL, username, password, nil)
+	client, err := New(server.URL, username, password)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -149,7 +149,7 @@ func TestDeleteToken(t *testing.T) {
 			}
 		})
 
-	client, err := New(server.URL, username, password, nil)
+	client, err := New(server.URL, username, password)
 	if err != nil {
 		t.Fatal(err)
 	}
