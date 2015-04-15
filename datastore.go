@@ -5,6 +5,7 @@
 package freeholdclient
 
 import (
+	"encoding/json"
 	"errors"
 	"os"
 	"path/filepath"
@@ -15,6 +16,37 @@ import (
 // and the properties associated with it
 type Datastore struct {
 	Property
+}
+
+// KeyValue is a key value pair returned from a datastore
+type KeyValue struct {
+	K           *json.RawMessage `json:"key,omitempty"`
+	V           *json.RawMessage `json:"value,omitempty"`
+	errRetrieve error            // any error returned when retrieving this KV
+}
+
+// Key is a convience function for unmarshalling the key
+// from the KeyValue, will return any errors from the retrieval
+// of this key first
+// So you can run requests like err := ds.Min().Key(&result)
+// and consolidate your error checking into one call
+func (kv *KeyValue) Key(result interface{}) error {
+	if kv.errRetrieve != nil {
+		return kv.errRetrieve
+	}
+	return json.Unmarshal([]byte(*kv.K), result)
+}
+
+// Value is a convience function for unmarshalling the key
+// from the KeyValue, will return any errors from the retrieval
+// of this key first
+// So you can run requests like err := ds.Min().Value(&result)
+// and consolidate your error checking into one call
+func (kv *KeyValue) Value(result interface{}) error {
+	if kv.errRetrieve != nil {
+		return kv.errRetrieve
+	}
+	return json.Unmarshal([]byte(*kv.V), result)
 }
 
 // GetDatastore retrieves a datastore for reading or writing from a freehold instance
@@ -89,6 +121,11 @@ func (d *Datastore) Children() ([]*File, error) {
 	return files, err
 }
 
+// Drop deletes the datastore file
+func (d *Datastore) Drop() error {
+	return d.Property.Delete()
+}
+
 // Get gets a value out of a freehold datastore
 func (d *Datastore) Get(key, returnValue interface{}) error {
 	return d.client.doRequest("GET", d.URL, map[string]interface{}{
@@ -96,9 +133,75 @@ func (d *Datastore) Get(key, returnValue interface{}) error {
 	}, returnValue)
 }
 
+// Put puts a new key value pair into the datastore
+func (d *Datastore) Put(key, value interface{}) error {
+	return d.client.doRequest("PUT", d.URL, map[string]interface{}{
+		"key":   key,
+		"value": value,
+	}, nil)
+}
+
+// PutObj puts the entire passed in object into the datastore
+// Top level keys become the basis for the key / values
+// object must be able to be marshalled into a json string
+func (d *Datastore) PutObj(object interface{}) error {
+	return d.client.doRequest("PUT", d.URL, object, nil)
+
+}
+
+// Delete deletes the value from the datastore for the passed in key
+func (d *Datastore) Delete(key interface{}) error {
+	return d.client.doRequest("DELETE", d.URL, map[string]interface{}{
+		"key": key,
+	}, nil)
+}
+
 // Min gets the minimum key / value in the datastore
-//func (d *Datastore) Min(key, value interface{}) error {
-//return d.client.doRequest("GET", d.URL, map[string}struct{}
-//"min": struct{}{},
-//}, returnValue)
-//}
+// Example:
+// 	err := ds.Min().Value(&result)
+func (d *Datastore) Min() *KeyValue {
+	result := &KeyValue{}
+	err := d.client.doRequest("GET", d.URL, map[string]struct{}{
+		"min": struct{}{},
+	}, result)
+	if err != nil {
+		result.errRetrieve = err
+	}
+	return result
+}
+
+// Max gets the maximum key / value in the datastore
+// Example:
+// 	err := ds.Max().Key(&result)
+func (d *Datastore) Max() *KeyValue {
+	result := &KeyValue{}
+	err := d.client.doRequest("GET", d.URL, map[string]struct{}{
+		"max": struct{}{},
+	}, result)
+	if err != nil {
+		result.errRetrieve = err
+	}
+	return result
+}
+
+// Iter is for iterating through a datastore
+type Iter struct {
+	From   interface{} `json:"from,omitempty"`
+	To     interface{} `json:"to,omitempty"`
+	Skip   int         `json:"skip,omitempty"`
+	Limit  int         `json:"limit,omitempty"`
+	Regexp string      `json:"regexp,omitempty"`
+	Order  string      `json:"order,omitempty"`
+}
+
+// Iter returns the list of key / values matched by the passed in interator
+func (d *Datastore) Iter(iter *Iter) ([]*KeyValue, error) {
+	var result []*KeyValue
+	err := d.client.doRequest("GET", d.URL, map[string]interface{}{
+		"iter": iter,
+	}, &result)
+	if err != nil {
+		return nil, err
+	}
+	return result, nil
+}

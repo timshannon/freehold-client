@@ -6,6 +6,7 @@ package freeholdclient
 
 import (
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -27,6 +28,14 @@ func startMockServer() {
 
 func stopMockServer() {
 	server.Close()
+}
+
+func requestBody(t *testing.T, r *http.Request) string {
+	req, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return string(req)
 }
 
 func TestFile(t *testing.T) {
