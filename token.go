@@ -86,7 +86,6 @@ func (t *Token) Delete() error {
 		map[string]string{
 			"id": t.ID,
 		}, nil)
-
 }
 
 // ExpiresTime is the parsed Time from the Token's JSON string response
@@ -96,7 +95,7 @@ func (t *Token) ExpiresTime() time.Time {
 		if err != nil {
 			//shouldn't happen as it means freehold is
 			// sending out bad dates
-			panic("Freehold instance is has bad Expired date!")
+			panic("Freehold instance has bad Expired date!")
 		}
 		t.expiresTime = tme
 	}
@@ -110,7 +109,7 @@ func (t *Token) CreatedTime() time.Time {
 		if err != nil {
 			//shouldn't happen as it means freehold is
 			// sending out bad dates
-			panic("Freehold instance is has bad Expired date!")
+			panic("Freehold instance has bad date!")
 		}
 		t.createdTime = tme
 	}
