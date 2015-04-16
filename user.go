@@ -77,10 +77,16 @@ func (u *User) Delete() error {
 
 // SetName sets the user's name
 func (u *User) SetName(newName string) error {
-	return u.client.doRequest("PUT", "/v1/auth/user/", map[string]string{
+	err := u.client.doRequest("PUT", "/v1/auth/user/", map[string]string{
 		"user": u.Username,
 		"name": newName,
 	}, nil)
+	if err != nil {
+		return err
+	}
+
+	u.Name = newName
+	return nil
 }
 
 // SetPassword sets the user's password
@@ -93,16 +99,27 @@ func (u *User) SetPassword(newPassword string) error {
 
 // SetHomeApp sets the user's home appliation
 func (u *User) SetHomeApp(newHomeApp string) error {
-	return u.client.doRequest("PUT", "/v1/auth/user/", map[string]string{
+	err := u.client.doRequest("PUT", "/v1/auth/user/", map[string]string{
 		"user":    u.Username,
 		"homeApp": newHomeApp,
 	}, nil)
+	if err != nil {
+		return err
+	}
+
+	u.HomeApp = newHomeApp
+	return nil
 }
 
 // SetAdmin sets if the user is an admin or not
 func (u *User) SetAdmin(isAdmin bool) error {
-	return u.client.doRequest("PUT", "/v1/auth/user/", map[string]interface{}{
+	err := u.client.doRequest("PUT", "/v1/auth/user/", map[string]interface{}{
 		"user":  u.Username,
 		"admin": isAdmin,
 	}, nil)
+	if err != nil {
+		return err
+	}
+	u.Admin = isAdmin
+	return nil
 }
