@@ -61,7 +61,7 @@ func (c *Client) GetApplication(appID string) (*Application, error) {
 func (c *Client) AvailableApplications() ([]*AvailableApplication, error) {
 	a := make(map[string]*AvailableApplication)
 
-	err := c.doRequest("GET", "/v1/application/available", nil, &a)
+	err := c.doRequest("GET", "/v1/application/available/", nil, &a)
 	if err != nil {
 		return nil, err
 	}
@@ -81,7 +81,7 @@ func (c *Client) AvailableApplications() ([]*AvailableApplication, error) {
 func (c *Client) PostAvailableApplication(url string) (*AvailableApplication, error) {
 	a := &AvailableApplication{}
 
-	err := a.client.doRequest("POST", "/v1/application/available", map[string]string{
+	err := c.doRequest("POST", "/v1/application/available/", map[string]string{
 		"file": url,
 	}, &a.File)
 
