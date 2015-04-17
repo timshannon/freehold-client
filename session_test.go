@@ -28,7 +28,6 @@ func TestSession(t *testing.T) {
 		})
 
 	client, err := New(server.URL, username, password)
-	//client, err := New("https://tshannon.org", "tshannon", "_hvlkuhuCsGifYbxVBuEgaLbYvAb9kVz6dHA43XThCk=")
 	if err != nil {
 		t.Fatal(err)
 	}
