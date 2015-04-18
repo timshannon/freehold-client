@@ -8,7 +8,7 @@ import (
 	"encoding/json"
 	"errors"
 	"os"
-	"path/filepath"
+	"path"
 	"strings"
 )
 
@@ -84,7 +84,7 @@ func (c *Client) UploadDatastore(dsFile *os.File, dest *File) (*Datastore, error
 		return nil, err
 	}
 
-	name := filepath.Base(info.Name())
+	name := path.Base(info.Name())
 	if !dest.IsDir {
 		return nil, errors.New("Destination is not a directory.")
 	}
@@ -92,7 +92,7 @@ func (c *Client) UploadDatastore(dsFile *os.File, dest *File) (*Datastore, error
 	d := &Datastore{
 		Property: Property{
 			Name:   name,
-			URL:    filepath.Join(dest.URL, name),
+			URL:    path.Join(dest.URL, name),
 			client: c,
 		},
 	}

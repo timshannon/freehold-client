@@ -10,7 +10,7 @@ import (
 	"io"
 	"mime/multipart"
 	"os"
-	"path/filepath"
+	"path"
 	"strings"
 	"time"
 )
@@ -70,7 +70,7 @@ func (c *Client) UploadFile(file *os.File, dest *File) (*File, error) {
 		return nil, err
 	}
 
-	name := filepath.Base(info.Name())
+	name := path.Base(info.Name())
 
 	return c.UploadFromReader(name, file, info.Size(), info.ModTime(), dest)
 
@@ -85,7 +85,7 @@ func (c *Client) UploadFromReader(fileName string, r io.Reader, size int64, modT
 	f := &File{
 		Property: Property{
 			Name:   fileName,
-			URL:    filepath.Join(dest.URL, fileName),
+			URL:    path.Join(dest.URL, fileName),
 			client: c,
 		},
 	}
