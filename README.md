@@ -2,6 +2,8 @@ Freehold Client
 ===================
 Freehold Client is a Go specific client API for interacting with a given [freehold](https://bitbucket.org/tshannon/freehold) instance.
 
+GoDoc API reference can be found [here](https://godoc.org/bitbucket.org/tshannon/freehold-client).
+
 Usage is as follows:
 ```
 	client, err := freeholdclient.New("https://freeholdinstance.org", "username", "passwordortoken", nil)
